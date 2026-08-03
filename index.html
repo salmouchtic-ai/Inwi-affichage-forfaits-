@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>inwi Panorama — Prototype</title>
+<meta name="description" content="Prototype conceptuel : une nouvelle façon de visualiser tous les forfaits mobiles en une seule vue." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <div class="logo">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <span class="logo-text">inwi <strong>panorama</strong></span>
+    </div>
+    <p class="header-tagline">Prototype conceptuel</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ SECTION 1 : AFFICHAGE ACTUEL ============ -->
+  <section class="section-actuel" aria-labelledby="titre-actuel">
+    <div class="container">
+      <span class="eyebrow eyebrow-muted">Le constat</span>
+      <h2 id="titre-actuel">Affichage actuel</h2>
+      <p class="section-sub">
+        Sur le site actuel, les forfaits défilent horizontalement. On ne voit que
+        <strong>3 offres à la fois</strong> et il faut cliquer plusieurs fois pour tout découvrir.
+      </p>
+
+      <div class="old-carousel-wrap">
+        <button class="carousel-arrow left" id="oldPrev" aria-label="Voir les forfaits précédents">&#8249;</button>
+        <div class="old-carousel" id="oldCarousel"></div>
+        <button class="carousel-arrow right" id="oldNext" aria-label="Voir les forfaits suivants">&#8250;</button>
+      </div>
+
+      <div class="carousel-dots" id="carouselDots" aria-hidden="true"></div>
+
+      <p class="problem-callout">
+        👀 Résultat&nbsp;: impossible d'avoir une vue d'ensemble de toute la gamme de forfaits.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2 : INWI PANORAMA ============ -->
+  <section class="section-panorama" aria-labelledby="titre-panorama">
+    <div class="container">
+      <span class="eyebrow">La solution</span>
+      <h2 id="titre-panorama">Tous les forfaits. <span class="highlight">Une seule vue.</span></h2>
+      <p class="section-sub">
+        Explorez, filtrez et comparez l'ensemble de nos forfaits mobiles, sans défilement imposé.
+      </p>
+
+      <div class="mode-selector" role="tablist" aria-label="Mode d'affichage">
+        <button class="mode-btn active" data-mode="global" role="tab" aria-selected="true">🗂️ Vue globale</button>
+        <button class="mode-btn" data-mode="budget" role="tab" aria-selected="false">💰 Par budget</button>
+        <button class="mode-btn" data-mode="compare" role="tab" aria-selected="false">⚖️ Comparer</button>
+      </div>
+
+      <button class="map-btn" id="openMapBtn">
+        🗺️ Explorer la carte des forfaits
+      </button>
+
+      <!-- ---- VUE GLOBALE ---- -->
+      <div class="view view-global active" id="view-global"></div>
+
+      <!-- ---- VUE PAR BUDGET ---- -->
+      <div class="view view-budget" id="view-budget">
+        <div class="budget-filters" id="budgetFilters">
+          <button class="chip active" data-budget="tous">Tous</button>
+          <button class="chip" data-budget="49">49 DH</button>
+          <button class="chip" data-budget="moins100">Moins de 100 DH</button>
+          <button class="chip" data-budget="100-200">100 à 200 DH</button>
+          <button class="chip" data-budget="plus200">Plus de 200 DH</button>
+        </div>
+        <div class="cards-grid" id="budgetGrid"></div>
+      </div>
+
+      <!-- ---- VUE COMPARER ---- -->
+      <div class="view view-compare" id="view-compare">
+        <p class="compare-hint">Sélectionnez jusqu'à <strong>3 forfaits</strong> à comparer grâce à la case « Comparer » sur chaque carte.</p>
+        <div class="cards-grid" id="compareGrid"></div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Barre fixe de comparaison -->
+<div class="fixed-compare-bar" id="compareBar">
+  <span id="compareBarText">0 forfait sélectionné</span>
+  <button id="compareBarBtn">Comparer</button>
+</div>
+
+<!-- Panneau latéral détail -->
+<div class="overlay" id="overlay"></div>
+<aside class="detail-panel" id="detailPanel" aria-hidden="true">
+  <button class="close-btn" id="closeDetailBtn" aria-label="Fermer">✕</button>
+  <div id="detailContent"></div>
+</aside>
+
+<!-- Modale comparaison -->
+<div class="modal" id="compareModal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close-btn" id="closeCompareBtn" aria-label="Fermer">✕</button>
+    <h3>Comparer les forfaits</h3>
+    <div class="table-wrap"><table id="compareTable"></table></div>
+  </div>
+</div>
+
+<!-- Modale carte des forfaits -->
+<div class="modal" id="mapModal" aria-hidden="true">
+  <div class="modal-content modal-map">
+    <button class="close-btn" id="closeMapBtn" aria-label="Fermer">✕</button>
+    <h3>Carte des forfaits</h3>
+    <p class="map-legend">
+      Axe horizontal&nbsp;: prix mensuel · Axe vertical&nbsp;: volume internet · Taille du point&nbsp;: heures d'appels
+    </p>
+    <div class="map-wrap">
+      <svg id="mapSvg" viewBox="0 0 640 420" role="img" aria-label="Carte interactive des forfaits"></svg>
+    </div>
+    <div class="map-legend-cats" id="mapLegendCats"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Prototype conceptuel — offres et données à valider par inwi.</p>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
