@@ -1,22 +1,14 @@
 import { useMemo, useState } from 'react';
-import type { BudgetRange, DataProfile, Plan, UsageTag } from '../types';
-import { DATA_PROFILE_LABELS, USAGE_LABELS, matchesBudget } from '../types';
-import { PLANS } from '../data/plans';
+import type { Variant } from '../types';
+import { variantDisplayName } from '../types';
+import { compactBenefits } from '../lib/variantDisplay';
+import type { Answers, QBudget, QData, QUsage } from '../lib/recommendation';
+import { buildJustification, computeRecommendation, explainDelta } from '../lib/recommendation';
 import { IconArrowRight, IconCheck, IconClose } from './Icons';
-
-type QBudget = 'under100' | '100to200' | '200to300' | 'any';
-type QUsage = 'social' | 'streaming' | 'calls' | 'mixed';
-type QData = 'light' | 'medium' | 'intensive';
-
-type Answers = {
-  budget?: QBudget;
-  usage?: QUsage;
-  data?: QData;
-};
 
 type QuestionnaireProps = {
   onClose: () => void;
-  onChoose: (plan: Plan) => void;
+  onChoose: (variant: Variant) => void;
 };
 
 const BUDGET_QUESTIONS: { value: QBudget; label: string }[] = [
@@ -39,71 +31,6 @@ const DATA_QUESTIONS: { value: QData; label: string }[] = [
   { value: 'intensive', label: 'Intensive' },
 ];
 
-function mapBudget(value?: QBudget): BudgetRange | null {
-  if (!value || value === 'any') return null;
-  return value;
-}
-
-function mapUsage(value?: QUsage): UsageTag | null {
-  switch (value) {
-    case 'social':
-      return 'social';
-    case 'streaming':
-      return 'internet';
-    case 'calls':
-      return 'calls';
-    default:
-      return null;
-  }
-}
-
-function mapDataProfile(value?: QData): DataProfile {
-  switch (value) {
-    case 'light':
-      return 'essential';
-    case 'intensive':
-      return 'intensive';
-    default:
-      return 'comfort';
-  }
-}
-
-const PROFILE_ORDER: DataProfile[] = ['essential', 'comfort', 'intensive'];
-
-function computeRecommendation(answers: Answers) {
-  const budgetRange = mapBudget(answers.budget);
-  const usageTag = mapUsage(answers.usage);
-  const dataProfile = mapDataProfile(answers.data);
-
-  let pool = budgetRange ? PLANS.filter((p) => matchesBudget(p.price, budgetRange)) : PLANS.slice();
-  if (pool.length === 0) pool = PLANS.slice();
-
-  const scored = pool
-    .map((plan) => {
-      let score = 0;
-      const dist = Math.abs(PROFILE_ORDER.indexOf(plan.dataProfile) - PROFILE_ORDER.indexOf(dataProfile));
-      if (dist === 0) score += 3;
-      else if (dist === 1) score += 1;
-      if (usageTag && plan.usageTags.includes(usageTag)) score += 2;
-      score -= plan.price / 1000;
-      return { plan, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  return {
-    top: scored[0].plan,
-    alternatives: scored.slice(1, 3).map((s) => s.plan),
-    dataProfile,
-    usageTag,
-  };
-}
-
-function buildJustification(plan: Plan, dataProfile: DataProfile, usageTag: UsageTag | null) {
-  const profileLabel = DATA_PROFILE_LABELS[dataProfile].toLowerCase();
-  const usagePart = usageTag ? ` orientée ${USAGE_LABELS[usageTag].toLowerCase()}` : '';
-  return `Le meilleur équilibre pour votre utilisation : ${plan.dataGB} Go pour une consommation ${profileLabel}${usagePart}, sans payer pour des services dont vous avez peu besoin.`;
-}
-
 function OptionButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
@@ -117,22 +44,38 @@ function OptionButton({ label, onClick }: { label: string; onClick: () => void }
   );
 }
 
-function CompactPlanRow({ plan, onChoose }: { plan: Plan; onChoose: (plan: Plan) => void }) {
+function AlternativeCard({
+  eyebrow,
+  variant,
+  deltaText,
+  onChoose,
+}: {
+  eyebrow: string;
+  variant: Variant;
+  deltaText: string;
+  onChoose: (v: Variant) => void;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-ink-100 px-4 py-3">
-      <div>
-        <p className="text-sm font-semibold text-ink-900">{plan.name}</p>
-        <p className="text-xs text-ink-500">
-          {plan.price} DH/mois · {plan.dataGB} Go
-        </p>
+    <div className="rounded-xl border border-ink-100 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{eyebrow}</p>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-ink-900">
+            {variant.price} DH — {variantDisplayName(variant)}
+          </p>
+          <p className="text-xs text-ink-500">
+            {variant.dataGB} Go · {variant.callsLabel}
+          </p>
+          {deltaText && <p className="mt-0.5 text-xs font-medium text-inwi-600">{deltaText}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={() => onChoose(variant)}
+          className="shrink-0 rounded-full border border-ink-200 px-3.5 py-1.5 text-xs font-semibold text-ink-900 transition-colors hover:border-inwi-600 hover:text-inwi-600"
+        >
+          Choisir
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => onChoose(plan)}
-        className="shrink-0 rounded-full border border-ink-200 px-3.5 py-1.5 text-xs font-semibold text-ink-900 transition-colors hover:border-inwi-600 hover:text-inwi-600"
-      >
-        Choisir
-      </button>
     </div>
   );
 }
@@ -237,8 +180,10 @@ export function Questionnaire({ onClose, onChoose }: QuestionnaireProps) {
 
           {step === 'result' && result && (
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-inwi-600">Votre forfait idéal</p>
-              <h2 className="mb-4 text-lg font-bold text-ink-900">{result.top.name}</h2>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-inwi-600">Notre recommandation</p>
+              <h2 className="mb-4 text-lg font-bold text-ink-900">
+                {result.top.price} DH/mois — {variantDisplayName(result.top)}
+              </h2>
 
               <div className="rounded-2xl border border-inwi-400 bg-inwi-50/40 p-5">
                 <div className="flex items-baseline gap-1">
@@ -247,19 +192,18 @@ export function Questionnaire({ onClose, onChoose }: QuestionnaireProps) {
                   <span className="text-sm text-ink-500">/mois</span>
                 </div>
                 <p className="mt-1 text-lg font-bold text-inwi-600">{result.top.dataGB} Go</p>
+                <p className="text-sm font-medium text-ink-700">{result.top.callsLabel}</p>
 
                 <ul className="mt-3 space-y-1.5">
-                  {result.top.benefits.slice(0, 3).map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-sm text-ink-700">
-                      <IconCheck className="h-4 w-4 text-inwi-600" />
+                  {compactBenefits(result.top, 3).map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-sm text-ink-700">
+                      <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-inwi-600" />
                       {b}
                     </li>
                   ))}
                 </ul>
 
-                <p className="mt-4 text-sm leading-relaxed text-ink-500">
-                  {buildJustification(result.top, result.dataProfile, result.usageTag)}
-                </p>
+                <p className="mt-4 text-sm leading-relaxed text-ink-500">{buildJustification(result.top, result.usage)}</p>
 
                 <button
                   type="button"
@@ -270,24 +214,50 @@ export function Questionnaire({ onClose, onChoose }: QuestionnaireProps) {
                 </button>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setShowAlternatives((v) => !v)}
-                  className="text-sm font-semibold text-inwi-600 hover:text-inwi-700"
-                >
-                  {showAlternatives ? 'Masquer les alternatives' : 'Voir 2 alternatives'}
-                </button>
-                <button type="button" onClick={restart} className="text-sm font-medium text-ink-500 hover:text-ink-900">
-                  Recommencer
-                </button>
-              </div>
+              {(result.sameTierAlt || result.upgradeAlt) && (
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowAlternatives((v) => !v)}
+                    className="text-sm font-semibold text-inwi-600 hover:text-inwi-700"
+                  >
+                    {showAlternatives
+                      ? 'Masquer les alternatives'
+                      : `Voir ${[result.sameTierAlt, result.upgradeAlt].filter(Boolean).length} alternative${
+                          [result.sameTierAlt, result.upgradeAlt].filter(Boolean).length > 1 ? 's' : ''
+                        }`}
+                  </button>
+                  <button type="button" onClick={restart} className="text-sm font-medium text-ink-500 hover:text-ink-900">
+                    Recommencer
+                  </button>
+                </div>
+              )}
+              {!result.sameTierAlt && !result.upgradeAlt && (
+                <div className="mt-4 flex justify-end">
+                  <button type="button" onClick={restart} className="text-sm font-medium text-ink-500 hover:text-ink-900">
+                    Recommencer
+                  </button>
+                </div>
+              )}
 
               {showAlternatives && (
                 <div className="mt-3 space-y-2">
-                  {result.alternatives.map((plan) => (
-                    <CompactPlanRow key={plan.id} plan={plan} onChoose={onChoose} />
-                  ))}
+                  {result.sameTierAlt && (
+                    <AlternativeCard
+                      eyebrow="Même budget"
+                      variant={result.sameTierAlt}
+                      deltaText={explainDelta(result.top, result.sameTierAlt)}
+                      onChoose={onChoose}
+                    />
+                  )}
+                  {result.upgradeAlt && (
+                    <AlternativeCard
+                      eyebrow={`Pour ${result.upgradeAlt.price - result.top.price} DH de plus`}
+                      variant={result.upgradeAlt}
+                      deltaText={explainDelta(result.top, result.upgradeAlt)}
+                      onChoose={onChoose}
+                    />
+                  )}
                 </div>
               )}
             </div>

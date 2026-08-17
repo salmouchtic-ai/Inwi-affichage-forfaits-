@@ -1,32 +1,23 @@
-import type { BudgetRange, DataProfile, UsageTag } from '../types';
-import { BUDGET_LABELS, DATA_PROFILE_LABELS, USAGE_LABELS } from '../types';
+import type { BudgetRange, UsageTag } from '../types';
+import { BUDGET_LABELS, USAGE_LABELS } from '../types';
 import { IconFilter } from './Icons';
 
 type FiltersState = {
   budget: BudgetRange | null;
   usage: UsageTag | null;
-  dataProfile: DataProfile | null;
 };
 
 type FiltersProps = {
   value: FiltersState;
   onChange: (next: FiltersState) => void;
-  resultCount: number;
+  variantCount: number;
+  tierCount: number;
 };
 
 const BUDGET_OPTIONS: BudgetRange[] = ['under100', '100to200', '200to300', 'over300'];
-const USAGE_OPTIONS: UsageTag[] = ['internet', 'social', 'calls', 'international'];
-const DATA_OPTIONS: DataProfile[] = ['essential', 'comfort', 'intensive'];
+const USAGE_OPTIONS: UsageTag[] = ['internet', 'social', 'appels', 'international'];
 
-function Chip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -43,18 +34,18 @@ function Chip({
   );
 }
 
-export function Filters({ value, onChange, resultCount }: FiltersProps) {
-  const hasActiveFilters = value.budget || value.usage || value.dataProfile;
+export function Filters({ value, onChange, variantCount, tierCount }: FiltersProps) {
+  const hasActiveFilters = value.budget || value.usage;
 
   return (
     <section id="forfaits" className="mx-auto max-w-7xl px-5 sm:px-8">
       <div className="rounded-2xl border border-ink-100 bg-ink-50/60 p-4 sm:p-5">
         <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
           <IconFilter className="h-4 w-4" />
-          Filtrer les forfaits
+          Filtrer les offres
         </div>
 
-        <div className="mt-3 grid gap-4 sm:grid-cols-3">
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-2 text-xs font-medium text-ink-500">Budget</p>
             <div className="flex flex-wrap gap-2">
@@ -84,33 +75,19 @@ export function Filters({ value, onChange, resultCount }: FiltersProps) {
               ))}
             </div>
           </div>
-
-          <div>
-            <p className="mb-2 text-xs font-medium text-ink-500">Consommation data</p>
-            <div className="flex flex-wrap gap-2">
-              {DATA_OPTIONS.map((option) => (
-                <Chip
-                  key={option}
-                  label={DATA_PROFILE_LABELS[option]}
-                  active={value.dataProfile === option}
-                  onClick={() =>
-                    onChange({ ...value, dataProfile: value.dataProfile === option ? null : option })
-                  }
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
           <p className="text-sm text-ink-500">
-            <span className="font-semibold text-ink-900">{resultCount}</span>{' '}
-            {resultCount > 1 ? 'forfaits correspondent' : 'forfait correspond'} à vos critères
+            <span className="font-semibold text-ink-900">{variantCount}</span>{' '}
+            {variantCount > 1 ? 'offres réparties sur' : 'offre sur'}{' '}
+            <span className="font-semibold text-ink-900">{tierCount}</span>{' '}
+            {tierCount > 1 ? 'paliers correspondent' : 'palier correspond'} à vos critères
           </p>
           {hasActiveFilters && (
             <button
               type="button"
-              onClick={() => onChange({ budget: null, usage: null, dataProfile: null })}
+              onClick={() => onChange({ budget: null, usage: null })}
               className="text-sm font-semibold text-inwi-600 hover:text-inwi-700"
             >
               Réinitialiser les filtres

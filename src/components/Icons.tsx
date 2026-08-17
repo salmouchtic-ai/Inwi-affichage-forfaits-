@@ -57,15 +57,6 @@ export function IconGift({ className = '' }: IconProps) {
   );
 }
 
-export function IconSms({ className = '' }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={`${base} ${className}`} aria-hidden="true">
-      <rect x="3.5" y="5" width="17" height="13" rx="2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M3.5 6.5 12 12l8.5-5.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export function IconCheck({ className = '' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={`${base} ${className}`} aria-hidden="true">
