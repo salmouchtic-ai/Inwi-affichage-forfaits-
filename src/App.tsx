@@ -75,6 +75,7 @@ function App() {
           maxSelection={MAX_COMPARE}
           onToggleCompare={toggleCompare}
           onChoose={handleChoose}
+          usageFilter={filters.usage}
         />
       </main>
 

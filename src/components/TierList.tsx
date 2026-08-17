@@ -1,4 +1,4 @@
-import type { Variant } from '../types';
+import type { UsageTag, Variant } from '../types';
 import { groupVariantsByTier } from '../data/plans';
 import { TierCard } from './TierCard';
 
@@ -8,9 +8,10 @@ type TierListProps = {
   maxSelection: number;
   onToggleCompare: (id: string) => void;
   onChoose: (variant: Variant) => void;
+  usageFilter: UsageTag | null;
 };
 
-export function TierList({ variants, selectedIds, maxSelection, onToggleCompare, onChoose }: TierListProps) {
+export function TierList({ variants, selectedIds, maxSelection, onToggleCompare, onChoose, usageFilter }: TierListProps) {
   const tiers = groupVariantsByTier(variants);
 
   if (tiers.length === 0) {
@@ -32,6 +33,7 @@ export function TierList({ variants, selectedIds, maxSelection, onToggleCompare,
           canSelectMore={selectedIds.length < maxSelection}
           onToggleCompare={onToggleCompare}
           onChoose={onChoose}
+          usageFilter={usageFilter}
         />
       ))}
     </div>

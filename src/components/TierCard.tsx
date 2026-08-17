@@ -1,8 +1,23 @@
-import { useState } from 'react';
-import type { Variant } from '../types';
-import { FAMILY_LABELS } from '../types';
-import { compactBenefits } from '../lib/variantDisplay';
+import { useEffect, useState } from 'react';
+import type { Family, UsageTag, Variant } from '../types';
+import { FAMILY_LABELS, variantDisplayName } from '../types';
+import { callsShortValue, compactBenefits, pickDefaultVariant } from '../lib/variantDisplay';
 import { IconCall, IconCheck, IconChat, IconCompare, IconGift, IconGlobe } from './Icons';
+
+const SHORT_FAMILY_LABELS: Record<Family, string> = {
+  social: 'RS',
+  internet: 'Internet',
+  appels: 'Appels',
+  illimite: 'Illimité',
+};
+
+function gridHeaderLabel(v: Variant): string {
+  // Avec une note de variante (2 offres de même famille au même prix), la note
+  // seule suffit à distinguer les colonnes : la famille est déjà rappelée
+  // sous la grille pour la colonne active, pas besoin de la répéter ici où
+  // la place est comptée (jusqu'à 4 colonnes sur une carte mobile).
+  return v.variantNote ?? SHORT_FAMILY_LABELS[v.family];
+}
 
 function BenefitIcon({ text }: { text: string }) {
   const lower = text.toLowerCase();
@@ -19,10 +34,20 @@ type TierCardProps = {
   canSelectMore: boolean;
   onToggleCompare: (id: string) => void;
   onChoose: (variant: Variant) => void;
+  usageFilter: UsageTag | null;
 };
 
-export function TierCard({ variants, selectedIds, canSelectMore, onToggleCompare, onChoose }: TierCardProps) {
-  const [selectedId, setSelectedId] = useState(variants[0].id);
+export function TierCard({ variants, selectedIds, canSelectMore, onToggleCompare, onChoose, usageFilter }: TierCardProps) {
+  const [selectedId, setSelectedId] = useState(() => pickDefaultVariant(variants, usageFilter).id);
+
+  // Quand le filtre d'usage change, on remet en avant la variante la plus
+  // pertinente pour ce nouvel usage. Un changement de budget seul, ou une
+  // sélection manuelle de l'utilisateur, ne sont pas écrasés.
+  useEffect(() => {
+    setSelectedId(pickDefaultVariant(variants, usageFilter).id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usageFilter]);
+
   const active = variants.find((v) => v.id === selectedId) ?? variants[0];
   const isSelected = selectedIds.includes(active.id);
   const isMultiVariant = variants.length > 1;
@@ -40,31 +65,65 @@ export function TierCard({ variants, selectedIds, canSelectMore, onToggleCompare
       </div>
 
       {isMultiVariant ? (
-        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Choisir une variante à ce prix">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setSelectedId(v.id)}
-              aria-pressed={v.id === active.id}
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                v.id === active.id
-                  ? 'border-inwi-600 bg-inwi-600 text-white'
-                  : 'border-ink-200 text-ink-700 hover:border-inwi-300 hover:text-inwi-600'
-              }`}
-            >
-              {v.variantNote ? `${FAMILY_LABELS[v.family]} · ${v.variantNote}` : FAMILY_LABELS[v.family]}
-            </button>
-          ))}
+        <div className="mt-3 overflow-x-auto border-t border-ink-100 pt-3">
+          <table className="w-full min-w-[220px] table-fixed border-separate border-spacing-0">
+            <thead>
+              <tr>
+                <th className="w-12" />
+                {variants.map((v) => (
+                  <th key={v.id} className="px-0.5 pb-1.5 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(v.id)}
+                      aria-pressed={v.id === active.id}
+                      className={`w-full rounded-md px-1 py-1 text-[11px] font-semibold leading-tight transition-colors ${
+                        v.id === active.id ? 'bg-inwi-600 text-white' : 'bg-ink-50 text-ink-500 hover:bg-ink-100'
+                      }`}
+                    >
+                      {gridHeaderLabel(v)}
+                    </button>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th className="pr-1 text-left text-[11px] font-medium text-ink-500">Data</th>
+                {variants.map((v) => (
+                  <td
+                    key={v.id}
+                    className={`px-0.5 py-1 text-center text-sm ${
+                      v.id === active.id ? 'font-bold text-inwi-600' : 'text-ink-400'
+                    }`}
+                  >
+                    {v.dataGB} Go
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <th className="pr-1 text-left text-[11px] font-medium text-ink-500">Appels</th>
+                {variants.map((v) => (
+                  <td
+                    key={v.id}
+                    className={`px-0.5 py-1 text-center text-sm ${
+                      v.id === active.id ? 'font-bold text-inwi-600' : 'text-ink-400'
+                    }`}
+                  >
+                    {callsShortValue(v)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-2 text-xs font-semibold text-inwi-600">{variantDisplayName(active)}</p>
         </div>
       ) : (
-        <p className="mt-1 text-xs font-semibold text-inwi-600">{FAMILY_LABELS[active.family]}</p>
+        <div className="mt-3 border-t border-ink-100 pt-3">
+          <p className="text-xs font-semibold text-inwi-600">{FAMILY_LABELS[active.family]}</p>
+          <p className="mt-1 text-lg font-bold text-inwi-600">{active.dataGB} Go</p>
+          <p className="text-sm font-medium text-ink-700">{active.callsLabel}</p>
+        </div>
       )}
-
-      <div className="mt-3 border-t border-ink-100 pt-3">
-        <p className="text-lg font-bold text-inwi-600">{active.dataGB} Go</p>
-        <p className="text-sm font-medium text-ink-700">{active.callsLabel}</p>
-      </div>
 
       <ul className="mt-2 space-y-1.5">
         {compactBenefits(active, 2).map((benefit) => (
