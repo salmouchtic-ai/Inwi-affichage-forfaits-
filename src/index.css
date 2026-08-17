@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  /* Inwi brand purple scale */
+  --color-inwi-50: #f6f0f8;
+  --color-inwi-100: #ead9ef;
+  --color-inwi-200: #d3b3df;
+  --color-inwi-300: #b586c9;
+  --color-inwi-400: #9a5cb4;
+  --color-inwi-500: #7c3a99;
+  --color-inwi-600: #63227e;
+  --color-inwi-700: #521a68;
+  --color-inwi-800: #431556;
+  --color-inwi-900: #350f44;
+
+  /* Neutral scale for text / surfaces */
+  --color-ink-900: #16151a;
+  --color-ink-700: #3a3841;
+  --color-ink-500: #6b6874;
+  --color-ink-300: #a8a5b0;
+  --color-ink-200: #d9d7dd;
+  --color-ink-100: #eeedf1;
+  --color-ink-50: #f8f7f9;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--color-ink-900);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-inwi-600);
+  outline-offset: 2px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
